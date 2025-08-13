@@ -13,3 +13,7 @@
   from = "/api/*"
   status = 200
   to = "/.netlify/functions/api/:splat"
+
+[build]
+  command = "npx prisma generate && npm run build:client"
+  publish = "dist/spa"
