@@ -1,0 +1,251 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              String   @id @default(cuid())
+  email           String   @unique
+  name            String
+  role            Role     @default(USER)
+  status          UserStatus @default(ACTIVE)
+  avatar          String?
+  verified        Boolean  @default(false)
+  joinDate        DateTime @default(now())
+  lastActive      DateTime @default(now())
+  loginCount      Int      @default(0)
+  lastLoginIp     String?
+  
+  // Relationships
+  jobs            Job[]
+  content         Content[]
+  comments        Comment[]
+  likes           Like[]
+  applications    JobApplication[]
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("users")
+}
+
+model Job {
+  id              String   @id @default(cuid())
+  title           String
+  company         String
+  category        JobCategory
+  location        String
+  salary          String
+  type            JobType
+  status          JobStatus @default(PUBLISHED)
+  description     String?
+  requirements    String? // JSON string
+  deadline        DateTime
+  featured        Boolean  @default(false)
+  verified        Boolean  @default(false)
+  logo            String?
+  logoFallback    String?
+  viewCount       Int      @default(0)
+  
+  // Relationships
+  authorId        String
+  author          User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  applications    JobApplication[]
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("jobs")
+}
+
+model Content {
+  id              String   @id @default(cuid())
+  title           String
+  type            ContentType
+  status          ContentStatus @default(PUBLISHED)
+  content         String
+  description     String?
+  category        String?
+  image           String?
+  featured        Boolean  @default(false)
+  urgent          Boolean  @default(false)
+  views           Int      @default(0)
+  
+  // Relationships
+  authorId        String
+  author          User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  comments        Comment[]
+  likes           Like[]
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("content")
+}
+
+model Comment {
+  id              String   @id @default(cuid())
+  content         String
+  
+  // Relationships
+  authorId        String
+  author          User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  contentId       String
+  contentItem     Content  @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("comments")
+}
+
+model Like {
+  id              String   @id @default(cuid())
+  
+  // Relationships
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  contentId       String
+  content         Content  @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  
+  createdAt       DateTime @default(now())
+
+  @@unique([userId, contentId])
+  @@map("likes")
+}
+
+model JobApplication {
+  id              String   @id @default(cuid())
+  status          ApplicationStatus @default(PENDING)
+  coverLetter     String?
+  resume          String? // File path or URL
+  
+  // Relationships
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  jobId           String
+  job             Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([userId, jobId])
+  @@map("job_applications")
+}
+
+model Session {
+  id              String   @id @default(cuid())
+  userId          String
+  token           String   @unique
+  expiresAt       DateTime
+  userAgent       String?
+  ipAddress       String?
+  
+  createdAt       DateTime @default(now())
+
+  @@map("sessions")
+}
+
+model Admin {
+  id              String   @id @default(cuid())
+  email           String   @unique
+  name            String
+  role            AdminRole @default(MODERATOR)
+  status          UserStatus @default(ACTIVE)
+  lastLogin       DateTime?
+  loginCount      Int      @default(0)
+  permissions     String? // JSON string of permissions
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("admins")
+}
+
+// Enums
+enum Role {
+  USER
+  MODERATOR
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  BANNED
+  PENDING
+}
+
+enum JobCategory {
+  NJO
+  BANKING
+  AIRLINES
+  AIRPORTS
+  GOVERNMENT
+  CITY_ADMIN
+  NGO
+  EDUCATION
+  ENGINEERING
+  TECHNOLOGY
+  HEALTHCARE
+  LEGAL
+  MARKETING
+  SALES
+  OTHER
+}
+
+enum JobType {
+  FULL_TIME
+  PART_TIME
+  CONTRACT
+  INTERNSHIP
+  FREELANCE
+  REMOTE
+}
+
+enum JobStatus {
+  PUBLISHED
+  DRAFT
+  PENDING
+  REJECTED
+  EXPIRED
+  CLOSED
+}
+
+enum ContentType {
+  CULTURAL_CONTENT
+  HISTORICAL_POST
+  NEWS_ANNOUNCEMENT
+  BLOG_POST
+  GUIDE
+  TUTORIAL
+}
+
+enum ContentStatus {
+  PUBLISHED
+  DRAFT
+  PENDING
+  REJECTED
+}
+
+enum ApplicationStatus {
+  PENDING
+  REVIEWING
+  ACCEPTED
+  REJECTED
+  WITHDRAWN
+}
+
+enum AdminRole {
+  SUPER_ADMIN
+  ADMIN
+  MODERATOR
+  CONTENT_MANAGER
+}
